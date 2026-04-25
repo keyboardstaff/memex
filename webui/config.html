@@ -1,0 +1,505 @@
+<html>
+<head>
+    <title>Memex</title>
+</head>
+
+<body>
+    <div x-data>
+        <template x-if="config">
+            <div>
+                <div class="section-title">Memex</div>
+                <div class="section-description">
+                    Persistent memory layer — cross-session search, decay scoring, user profiling, and auto skill learning.
+                </div>
+
+                <!-- Dashboard -->
+                <div class="section-title memex-subsection">Dashboard</div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Sidebar Button</div>
+                        <div class="field-description">Show Memex button in sidebar quick actions.</div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox" x-model="config.dashboard_sidebar_button" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Session Search -->
+                <div class="section-title memex-subsection">Session Search</div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Enabled</div>
+                        <div class="field-description">Index conversations for cross-session search and proactive recall.</div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox" x-model="config.session_search_enabled" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field" x-show="config.session_search_enabled">
+                    <div class="field-label">
+                        <div class="field-title">Min Messages</div>
+                        <div class="field-description">Minimum messages before a conversation is indexed.</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="number" x-model.number="config.session_index_min_messages" min="1" max="50" />
+                    </div>
+                </div>
+
+                <div class="field" x-show="config.session_search_enabled">
+                    <div class="field-label">
+                        <div class="field-title">Proactive Recall</div>
+                        <div class="field-description">Inject related past sessions at conversation start.</div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox" x-model="config.session_proactive_recall" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field" x-show="config.session_search_enabled && config.session_proactive_recall">
+                    <div class="field-label">
+                        <div class="field-title">Recall Limit</div>
+                        <div class="field-description">Max past sessions to inject.</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="number" x-model.number="config.session_proactive_limit" min="1" max="20" />
+                    </div>
+                </div>
+
+                <div class="field" x-show="config.session_search_enabled">
+                    <div class="field-label">
+                        <div class="field-title">Knowledge Recall</div>
+                        <div class="field-description">Inject relevant knowledge entries at conversation start (Proposal D).</div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox" x-model="config.knowledge_proactive_recall" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field" x-show="config.session_search_enabled && config.knowledge_proactive_recall">
+                    <div class="field-label">
+                        <div class="field-title">Knowledge Recall Limit</div>
+                        <div class="field-description">Max knowledge entries to inject per turn.</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="number" x-model.number="config.knowledge_proactive_limit" min="1" max="10" />
+                    </div>
+                </div>
+
+                <div class="field" x-show="config.session_search_enabled">
+                    <div class="field-label">
+                        <div class="field-title">Search Limit</div>
+                        <div class="field-description">Max results per search query.</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="number" x-model.number="config.session_search_default_limit" min="1" max="100" />
+                    </div>
+                </div>
+
+                <!-- Memory Decay -->
+                <div class="section-title memex-subsection">Memory Decay</div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Enabled</div>
+                        <div class="field-description">Weight memories by recency and access frequency.</div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox" x-model="config.decay_enabled" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field" x-show="config.decay_enabled">
+                    <div class="field-label">
+                        <div class="field-title">Half-life (days)</div>
+                        <div class="field-description">Days until relevance drops to 50%. Higher = slower decay.</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="number" x-model.number="config.decay_half_life_days" min="1" max="365" step="0.5" />
+                    </div>
+                </div>
+
+                <div class="field" x-show="config.decay_enabled">
+                    <div class="field-label">
+                        <div class="field-title">Scoring Weights</div>
+                        <div class="field-description">
+                            Priority = similarity × <span x-text="config.decay_similarity_weight"></span>
+                            + recency × <span x-text="config.decay_recency_weight"></span>
+                            + access × <span x-text="config.decay_access_weight"></span>
+                            + importance × <span x-text="config.decay_importance_weight"></span>
+                        </div>
+                    </div>
+                    <div class="field-control memex-weights">
+                        <label class="memex-weight-label">Similarity<input type="number" x-model.number="config.decay_similarity_weight" min="0" max="1" step="0.05" class="memex-weight-input" /></label>
+                        <label class="memex-weight-label">Recency<input type="number" x-model.number="config.decay_recency_weight" min="0" max="1" step="0.05" class="memex-weight-input" /></label>
+                        <label class="memex-weight-label">Access<input type="number" x-model.number="config.decay_access_weight" min="0" max="1" step="0.05" class="memex-weight-input" /></label>
+                        <label class="memex-weight-label">Importance<input type="number" x-model.number="config.decay_importance_weight" min="0" max="1" step="0.05" class="memex-weight-input" /></label>
+                    </div>
+                </div>
+
+                <div class="field" x-show="config.decay_enabled">
+                    <div class="field-label">
+                        <div class="field-title">Update Interval (min)</div>
+                        <div class="field-description">How often decay scores are recalculated.</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="number" x-model.number="config.decay_update_interval_minutes" min="5" max="1440" />
+                    </div>
+                </div>
+
+                <!-- Memory Nudge -->
+                <div class="section-title memex-subsection">Memory Nudge</div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Enabled</div>
+                        <div class="field-description">Periodic background review: archive stale memories and extract insights.</div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox" x-model="config.nudge_enabled" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field" x-show="config.nudge_enabled">
+                    <div class="field-label">
+                        <div class="field-title">Interval (minutes)</div>
+                        <div class="field-description">Time between background review cycles.</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="number" x-model.number="config.nudge_interval_minutes" min="5" max="1440" />
+                    </div>
+                </div>
+
+                <div class="field" x-show="config.nudge_enabled">
+                    <div class="field-label">
+                        <div class="field-title">Turn Interval</div>
+                        <div class="field-description">Monologue turns between reviews.</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="number" x-model.number="config.nudge_turn_interval" min="1" max="100" />
+                    </div>
+                </div>
+
+                <div class="field" x-show="config.nudge_enabled">
+                    <div class="field-label">
+                        <div class="field-title">Batch Size</div>
+                        <div class="field-description">Memories reviewed per cycle.</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="number" x-model.number="config.nudge_batch_size" min="1" max="50" />
+                    </div>
+                </div>
+
+                <div class="field" x-show="config.nudge_enabled">
+                    <div class="field-label">
+                        <div class="field-title">Min Age (hours)</div>
+                        <div class="field-description">Only review memories older than this.</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="number" x-model.number="config.nudge_min_age_hours" min="1" max="720" />
+                    </div>
+                </div>
+
+                <div class="field" x-show="config.nudge_enabled">
+                    <div class="field-label">
+                        <div class="field-title">Max LLM Calls / Cycle</div>
+                        <div class="field-description">LLM calls per nudge cycle (cost control).</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="number" x-model.number="config.nudge_max_llm_calls" min="1" max="20" />
+                    </div>
+                </div>
+
+                <div class="field" x-show="config.nudge_enabled">
+                    <div class="field-label">
+                        <div class="field-title">Insight Threshold</div>
+                        <div class="field-description">Min related memories to generate an insight.</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="number" x-model.number="config.nudge_insight_threshold" min="1" max="50" />
+                    </div>
+                </div>
+
+                <div class="field" x-show="config.nudge_enabled">
+                    <div class="field-label">
+                        <div class="field-title">Archive Threshold</div>
+                        <div class="field-description">Priority score below which memories are archived (0–1).</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="number" x-model.number="config.nudge_archive_score_threshold" min="0" max="1" step="0.01" />
+                    </div>
+                </div>
+
+                <div class="field" x-show="config.nudge_enabled">
+                    <div class="field-label">
+                        <div class="field-title">Max Total Insights</div>
+                        <div class="field-description">Global cap on insights stored in memory. 0 = unlimited.</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="number" x-model.number="config.nudge_max_insights_total" min="0" max="5000" />
+                    </div>
+                </div>
+
+                <!-- User Portrait -->
+                <div class="section-title memex-subsection">User Portrait</div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Enabled</div>
+                        <div class="field-description">Build a user model from conversations: preferences, habits, expertise.</div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox" x-model="config.portrait_enabled" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field" x-show="config.portrait_enabled">
+                    <div class="field-label">
+                        <div class="field-title">Min Messages</div>
+                        <div class="field-description">Min messages before extracting user traits.</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="number" x-model.number="config.portrait_min_messages" min="2" max="50" />
+                    </div>
+                </div>
+
+                <div class="field" x-show="config.portrait_enabled">
+                    <div class="field-label">
+                        <div class="field-title">Max Observations</div>
+                        <div class="field-description">Trait observations extracted per conversation.</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="number" x-model.number="config.portrait_max_observations" min="1" max="20" />
+                    </div>
+                </div>
+
+                <div class="field" x-show="config.portrait_enabled">
+                    <div class="field-label">
+                        <div class="field-title">Inject Min Confidence</div>
+                        <div class="field-description">Min confidence to include a trait in prompts (0–1).</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="number" x-model.number="config.portrait_inject_min_confidence" min="0" max="1" step="0.1" />
+                    </div>
+                </div>
+
+                <div class="field" x-show="config.portrait_enabled">
+                    <div class="field-label">
+                        <div class="field-title">Confidence Decay</div>
+                        <div class="field-description">Confidence drop per conversation without reinforcement.</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="number" x-model.number="config.portrait_confidence_decay" min="0" max="0.5" step="0.005" />
+                    </div>
+                </div>
+
+                <!-- Skills -->
+                <div class="section-title memex-subsection">Skills (Procedural Memory)</div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Enabled</div>
+                        <div class="field-description">Auto-extract reusable skills from completed tasks.</div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox" x-model="config.skills_enabled" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field" x-show="config.skills_enabled">
+                    <div class="field-label">
+                        <div class="field-title">Index All Skills</div>
+                        <div class="field-description">Include all A0 built-in skills in the always-visible index, not just memex-learned ones.</div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox" x-model="config.skills_index_all" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field" x-show="config.skills_enabled">
+                    <div class="field-label">
+                        <div class="field-title">Auto-Expire Skills</div>
+                        <div class="field-description">Delete skills that exceed their expiry date.</div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox" x-model="config.skills_expiry_enabled" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field" x-show="config.skills_enabled && config.skills_expiry_enabled">
+                    <div class="field-label">
+                        <div class="field-title">Expiry Check Interval (hours)</div>
+                        <div class="field-description">How often expired skills are checked and removed.</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="number" x-model.number="config.skills_expiry_cleanup_interval_hours" min="1" max="720" />
+                    </div>
+                </div>
+
+                <div class="field" x-show="config.skills_enabled">
+                    <div class="field-label">
+                        <div class="field-title">Max Loaded Skills</div>
+                        <div class="field-description">Skills kept in context at once. Oldest evicted first. Max: 5.</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="number" x-model.number="config.skills_max_loaded" min="1" max="5" />
+                    </div>
+                </div>
+
+                <div class="field" x-show="config.skills_enabled">
+                    <div class="field-label">
+                        <div class="field-title">Min Tool Iterations</div>
+                        <div class="field-description">Min tool uses before skill creation is triggered.</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="number" x-model.number="config.skills_min_tool_iterations" min="1" max="50" />
+                    </div>
+                </div>
+
+                <div class="field" x-show="config.skills_enabled">
+                    <div class="field-label">
+                        <div class="field-title">Max Skills / Conversation</div>
+                        <div class="field-description">Skills created from a single conversation.</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="number" x-model.number="config.skills_max_per_conversation" min="1" max="10" />
+                    </div>
+                </div>
+
+                <div class="field" x-show="config.skills_enabled">
+                    <div class="field-label">
+                        <div class="field-title">Auto-Improve Skills</div>
+                        <div class="field-description">Review and improve heavily-used skills after repeated use.</div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox" x-model="config.skills_improve_enabled" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field" x-show="config.skills_enabled && config.skills_improve_enabled">
+                    <div class="field-label">
+                        <div class="field-title">Improve Threshold</div>
+                        <div class="field-description">Usage count interval to trigger a skill review (e.g. every 5 uses).</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="number" x-model.number="config.skills_improve_threshold" min="2" max="50" />
+                    </div>
+                </div>
+
+                <!-- Session Chapters -->
+                <div class="section-title memex-subsection">Session Chapters (Auto Compact)</div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Enabled</div>
+                        <div class="field-description">Snapshot conversations as chapters before context compression. Builds a browsable history chain.</div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox" x-model="config.auto_compact_enabled" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field" x-show="config.auto_compact_enabled">
+                    <div class="field-label">
+                        <div class="field-title">Min Messages Between Chapters</div>
+                        <div class="field-description">New messages needed since last chapter before another snapshot fires.</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="number" x-model.number="config.auto_compact_min_new_messages" min="3" max="100" />
+                    </div>
+                </div>
+
+                <div class="field" x-show="config.auto_compact_enabled">
+                    <div class="field-label">
+                        <div class="field-title">Extract Facts Before Compression</div>
+                        <div class="field-description">Use LLM to save key facts to memory before context is compressed.</div>
+                    </div>
+                    <div class="field-control">
+                        <label class="toggle">
+                            <input type="checkbox" x-model="config.auto_compact_save_facts" />
+                            <span class="toggler"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field" x-show="config.auto_compact_enabled && config.auto_compact_save_facts">
+                    <div class="field-label">
+                        <div class="field-title">Max Facts Per Compression</div>
+                        <div class="field-description">Max key facts extracted and saved per compression event.</div>
+                    </div>
+                    <div class="field-control">
+                        <input type="number" x-model.number="config.auto_compact_max_facts" min="1" max="20" />
+                    </div>
+                </div>
+
+            </div>
+        </template>
+    </div>
+
+    <style>
+        .memex-subsection {
+            margin-top: var(--spacing-lg);
+            font-size: var(--font-size-smaller);
+        }
+
+        .memex-weights {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: var(--spacing-sm);
+        }
+
+        .memex-weight-label {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            font-size: var(--font-size-xs);
+            color: var(--color-text-muted);
+        }
+
+        .memex-weight-input {
+            width: 64px;
+            text-align: center;
+        }
+    </style>
+</body>
+</html>

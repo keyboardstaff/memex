@@ -1,0 +1,69 @@
+# ═══════════════════════════════════════════════
+# Dashboard
+# ═══════════════════════════════════════════════
+dashboard_sidebar_button: true
+
+# ═══════════════════════════════════════════════
+# Session Search
+# ═══════════════════════════════════════════════
+session_search_enabled: true
+session_index_min_messages: 3
+session_search_default_limit: 20
+session_proactive_recall: true
+session_proactive_limit: 5
+knowledge_proactive_recall: true
+knowledge_proactive_limit: 3
+
+# ═══════════════════════════════════════════════
+# Memory Decay / Priority
+# ═══════════════════════════════════════════════
+decay_enabled: true
+decay_half_life_days: 14.0
+decay_similarity_weight: 0.55
+decay_recency_weight: 0.20
+decay_access_weight: 0.15
+decay_importance_weight: 0.10
+decay_update_interval_minutes: 30
+
+# ═══════════════════════════════════════════════
+# Memory Nudge
+# ═══════════════════════════════════════════════
+nudge_enabled: true
+nudge_interval_minutes: 60
+nudge_turn_interval: 10
+nudge_batch_size: 8
+nudge_min_age_hours: 48
+nudge_insight_threshold: 3
+nudge_archive_score_threshold: 0.05
+nudge_max_llm_calls: 3
+nudge_max_insights_total: 500
+
+# ═══════════════════════════════════════════════
+# User Portraiture
+# ═══════════════════════════════════════════════
+portrait_enabled: true
+portrait_min_messages: 4
+portrait_max_observations: 5
+portrait_confidence_decay: 0.01
+portrait_inject_min_confidence: 0.5
+
+# ═══════════════════════════════════════════════
+# Skill System
+# ═══════════════════════════════════════════════
+skills_enabled: true
+skills_index_all: false
+skills_max_loaded: 5
+skills_max_per_conversation: 2
+skills_min_tool_iterations: 3
+skills_expiry_enabled: false
+skills_expiry_cleanup_interval_hours: 24
+skills_improve_enabled: true
+skills_improve_threshold: 5
+
+# ═══════════════════════════════════════════════
+# Session Chapters (Auto Compact)
+# ═══════════════════════════════════════════════
+auto_compact_enabled: true
+auto_compact_min_new_messages: 10
+auto_compact_save_facts: true
+auto_compact_max_facts: 5

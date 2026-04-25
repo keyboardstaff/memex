@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Memex Dashboard</title>
+    <script type="module">
+        import { store } from "/usr/plugins/memex/webui/memex-dashboard-store.js";
+    </script>
+</head>
+<body>
+    <div x-data>
+        <template x-if="$store.memexDashboard">
+            <div x-create="$store.memexDashboard.onOpen()"
+                 x-destroy="$store.memexDashboard.cleanup()"
+                 class="mx-dash">
+
+                <!-- Header actions -->
+                <div class="mx-header">
+                    <button class="mx-btn mx-btn-ghost" @click="$store.memexDashboard.refresh()"
+                            :disabled="$store.memexDashboard.loading"
+                            title="Refresh">
+                        <span class="material-symbols-outlined"
+                              :class="$store.memexDashboard.loading && 'mx-spin'">refresh</span>
+                    </button>
+                    <button class="mx-btn mx-btn-ghost" @click="$store.pluginSettingsPrototype.openConfig('memex')"
+                            title="Settings">
+                        <span class="material-symbols-outlined">settings</span>
+                    </button>
+                </div>
+
+                <!-- Error banner -->
+                <template x-if="$store.memexDashboard.error">
+                    <div class="mx-alert">
+                        <span class="material-symbols-outlined">error</span>
+                        <span x-text="$store.memexDashboard.error"></span>
+                    </div>
+                </template>
+
+                <!-- Loading skeleton -->
+                <template x-if="$store.memexDashboard.loading && !$store.memexDashboard.decay">
+                    <div class="mx-loading">
+                        <span class="material-symbols-outlined mx-spin">progress_activity</span>
+                        <span>Loading stats&hellip;</span>
+                    </div>
+                </template>
+
+                <!-- Statistics row -->
+                <template x-if="$store.memexDashboard.decay">
+                    <div>
+                        <div class="mx-stats-row">
+                            <div class="mx-stat-big">
+                                <span class="mx-stat-number" x-text="$store.memexDashboard.decay?.total ?? 0"></span>
+                                <span class="mx-stat-name">TRACKED</span>
+                            </div>
+                            <div class="mx-stat-big">
+                                <span class="mx-stat-number" x-text="$store.memexDashboard.nudge?.insights_generated ?? 0"></span>
+                                <span class="mx-stat-name">INSIGHTS</span>
+                            </div>
+                            <div class="mx-stat-big">
+                                <span class="mx-stat-number" x-text="$store.memexDashboard.nudge?.memories_archived ?? 0"></span>
+                                <span class="mx-stat-name">ARCHIVED</span>
+                            </div>
+                            <div class="mx-stat-big">
+                                <span class="mx-stat-number" x-text="$store.memexDashboard.skills?.total ?? 0"></span>
+                                <span class="mx-stat-name">SKILLS</span>
+                            </div>
+                            <div class="mx-stat-big">
+                                <span class="mx-stat-number" x-text="$store.memexDashboard.chapters?.total ?? 0"></span>
+                                <span class="mx-stat-name">CHAPTERS</span>
+                            </div>
+                            <div class="mx-stat-big">
+                                <span class="mx-stat-number" x-text="$store.memexDashboard.portrait?.traits ?? 0"></span>
+                                <span class="mx-stat-name">TRAITS</span>
+                            </div>
+                        </div>
+
+                        <!-- Subsystem Overview -->
+                        <div class="mx-overview-section">
+                            <div class="mx-overview-header">
+                                <span class="mx-overview-title">SUBSYSTEM OVERVIEW</span>
+                                <div class="mx-overview-filters">
+                                    <button class="mx-filter-btn"
+                                            :class="!$store.memexDashboard.selectedSubdir && 'mx-filter-active'"
+                                            @click="$store.memexDashboard.selectSubdir(null)">All</button>
+                                    <template x-for="sd in $store.memexDashboard.availableSubdirs" :key="sd">
+                                        <button class="mx-filter-btn"
+                                                :class="$store.memexDashboard.selectedSubdir === sd && 'mx-filter-active'"
+                                                @click="$store.memexDashboard.selectSubdir(sd)"
+                                                x-text="$store.memexDashboard.subdirLabel(sd)"></button>
+                                    </template>
+                                </div>
+                            </div>
+
+                            <div class="mx-overview-bar">
+                                <template x-if="($store.memexDashboard.decay?.total ?? 0) > 0">
+                                    <div class="mx-bar-segment mx-bar-decay"
+                                         :style="`flex: ${$store.memexDashboard.decay.total}`"
+                                         :title="`Memory Decay: ${$store.memexDashboard.decay.total}`">
+                                        <span x-text="$store.memexDashboard.decay.total"></span>
+                                    </div>
+                                </template>
+                                <template x-if="($store.memexDashboard.session?.sessions ?? 0) > 0">
+                                    <div class="mx-bar-segment mx-bar-session"
+                                         :style="`flex: ${$store.memexDashboard.session.sessions}`"
+                                         :title="`Sessions: ${$store.memexDashboard.session.sessions}`">
+                                        <span x-text="$store.memexDashboard.session.sessions"></span>
+                                    </div>
+                                </template>
+                                <template x-if="($store.memexDashboard.nudge?.insights_generated ?? 0) > 0">
+                                    <div class="mx-bar-segment mx-bar-nudge"
+                                         :style="`flex: ${$store.memexDashboard.nudge.insights_generated}`"
+                                         :title="`Insights: ${$store.memexDashboard.nudge.insights_generated}`">
+                                        <span x-text="$store.memexDashboard.nudge.insights_generated"></span>
+                                    </div>
+                                </template>
+                                <template x-if="($store.memexDashboard.skills?.total ?? 0) > 0">
+                                    <div class="mx-bar-segment mx-bar-skills"
+                                         :style="`flex: ${$store.memexDashboard.skills.total}`"
+                                         :title="`Skills: ${$store.memexDashboard.skills.total}`">
+                                        <span x-text="$store.memexDashboard.skills.total"></span>
+                                    </div>
+                                </template>
+                                <template x-if="($store.memexDashboard.chapters?.total ?? 0) > 0">
+                                    <div class="mx-bar-segment mx-bar-chapters"
+                                         :style="`flex: ${$store.memexDashboard.chapters.total}`"
+                                         :title="`Chapters: ${$store.memexDashboard.chapters.total}`">
+                                        <span x-text="$store.memexDashboard.chapters.total"></span>
+                                    </div>
+                                </template>
+                                <template x-if="($store.memexDashboard.portrait?.traits ?? 0) > 0">
+                                    <div class="mx-bar-segment mx-bar-portrait"
+                                         :style="`flex: ${$store.memexDashboard.portrait.traits}`"
+                                         :title="`Traits: ${$store.memexDashboard.portrait.traits}`">
+                                        <span x-text="$store.memexDashboard.portrait.traits"></span>
+                                    </div>
+                                </template>
+                                <template x-if="$store.memexDashboard.subsystemsTotal() === 0">
+                                    <div class="mx-bar-segment mx-bar-empty" style="flex: 1">
+                                        <span>0</span>
+                                    </div>
+                                </template>
+                            </div>
+
+                            <div class="mx-overview-legend">
+                                <span class="mx-legend-item">
+                                    <span class="mx-legend-dot mx-dot-decay"></span>Decay
+                                </span>
+                                <span class="mx-legend-item">
+                                    <span class="mx-legend-dot mx-dot-session"></span>Sessions
+                                </span>
+                                <span class="mx-legend-item">
+                                    <span class="mx-legend-dot mx-dot-nudge"></span>Insights
+                                </span>
+                                <span class="mx-legend-item">
+                                    <span class="mx-legend-dot mx-dot-skills"></span>Skills
+                                </span>
+                                <span class="mx-legend-item">
+                                    <span class="mx-legend-dot mx-dot-chapters"></span>Chapters
+                                </span>
+                                <span class="mx-legend-item">
+                                    <span class="mx-legend-dot mx-dot-portrait"></span>Traits
+                                    <span class="mx-global-tag">global</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Subsystem cards -->
+                        <div class="mx-cards">
+
+                            <!-- Decay -->
+                            <div class="mx-card">
+                                <div class="mx-card-head">
+                                    <span class="material-symbols-outlined mx-card-icon">trending_down</span>
+                                    <span class="mx-card-title">Memory Decay</span>
+                                    <span class="mx-badge" :class="($store.memexDashboard.decay?.total ?? 0) > 0 ? 'mx-badge-active' : 'mx-badge-idle'">
+                                        <span x-text="($store.memexDashboard.decay?.total ?? 0) > 0 ? 'ACTIVE' : 'IDLE'"></span>
+                                    </span>
+                                </div>
+                                <div class="mx-card-body">
+                                    <div class="mx-kv"><span>Tracked memories</span><span x-text="$store.memexDashboard.decay?.total ?? 0"></span></div>
+                                    <div class="mx-kv"><span>Avg access count</span><span x-text="($store.memexDashboard.decay?.avg_access ?? 0).toFixed(1)"></span></div>
+                                    <div class="mx-kv"><span>Max access count</span><span x-text="$store.memexDashboard.decay?.max_access ?? 0"></span></div>
+                                    <div class="mx-kv"><span>Last updated</span><span x-text="$store.memexDashboard.formatDate($store.memexDashboard.decay?.last_updated)"></span></div>
+                                </div>
+                            </div>
+
+                            <!-- Nudge -->
+                            <div class="mx-card">
+                                <div class="mx-card-head">
+                                    <span class="material-symbols-outlined mx-card-icon">vital_signs</span>
+                                    <span class="mx-card-title">Memory Nudge</span>
+                                    <span class="mx-badge" :class="$store.memexDashboard.nudge?.last_nudge_time ? 'mx-badge-active' : 'mx-badge-idle'">
+                                        <span x-text="$store.memexDashboard.nudge?.last_nudge_time ? 'ACTIVE' : 'IDLE'"></span>
+                                    </span>
+                                </div>
+                                <div class="mx-card-body">
+                                    <div class="mx-kv"><span>Insights generated</span><span x-text="$store.memexDashboard.nudge?.insights_generated ?? 0"></span></div>
+                                    <div class="mx-kv"><span>Memories archived</span><span x-text="$store.memexDashboard.nudge?.memories_archived ?? 0"></span></div>
+                                    <div class="mx-kv"><span>Last run</span><span x-text="$store.memexDashboard.formatDate($store.memexDashboard.nudge?.last_nudge_time)"></span></div>
+                                </div>
+                            </div>
+
+                            <!-- Sessions -->
+                            <div class="mx-card">
+                                <div class="mx-card-head">
+                                    <span class="material-symbols-outlined mx-card-icon">search</span>
+                                    <span class="mx-card-title">Session Index</span>
+                                    <span class="mx-badge" :class="($store.memexDashboard.session?.sessions ?? 0) > 0 ? 'mx-badge-active' : 'mx-badge-idle'">
+                                        <span x-text="($store.memexDashboard.session?.sessions ?? 0) > 0 ? 'ACTIVE' : 'IDLE'"></span>
+                                    </span>
+                                </div>
+                                <div class="mx-card-body">
+                                    <div class="mx-kv"><span>Sessions indexed</span><span x-text="$store.memexDashboard.session?.sessions ?? 0"></span></div>
+                                    <div class="mx-kv"><span>Messages stored</span><span x-text="$store.memexDashboard.session?.messages ?? 0"></span></div>
+                                    <div class="mx-kv"><span>Last indexed</span><span x-text="$store.memexDashboard.formatDate($store.memexDashboard.session?.last_updated)"></span></div>
+                                </div>
+                            </div>
+
+                            <!-- Skills -->
+                            <div class="mx-card">
+                                <div class="mx-card-head">
+                                    <span class="material-symbols-outlined mx-card-icon">build</span>
+                                    <span class="mx-card-title">Skill Library</span>
+                                    <span class="mx-badge"
+                                          :class="($store.memexDashboard.skills?.total ?? 0) > 0 ? 'mx-badge-active' : 'mx-badge-idle'">
+                                        <span x-text="($store.memexDashboard.skills?.total ?? 0) > 0 ? 'ACTIVE' : 'IDLE'"></span>
+                                    </span>
+                                </div>
+                                <div class="mx-card-body">
+                                    <div class="mx-kv"><span>Total skills</span><span x-text="$store.memexDashboard.skills?.total ?? 0"></span></div>
+                                    <div class="mx-kv"><span>Recall hit rate</span><span x-text="($store.memexDashboard.skills?.recall_attempts ?? 0) > 0 ? (Math.round(($store.memexDashboard.skills.recall_rate ?? 0) * 100) + '%') : '—'"></span></div>
+                                    <div class="mx-kv"><span>Last used</span><span x-text="$store.memexDashboard.formatDate($store.memexDashboard.skills?.last_updated)"></span></div>
+                                </div>
+                            </div>
+
+                            <!-- Session Chapters -->
+                            <div class="mx-card">
+                                <div class="mx-card-head">
+                                    <span class="material-symbols-outlined mx-card-icon">auto_stories</span>
+                                    <span class="mx-card-title">Session Chapters</span>
+                                    <span class="mx-badge" :class="($store.memexDashboard.chapters?.total ?? 0) > 0 ? 'mx-badge-active' : 'mx-badge-idle'">
+                                        <span x-text="($store.memexDashboard.chapters?.total ?? 0) > 0 ? 'ACTIVE' : 'IDLE'"></span>
+                                    </span>
+                                </div>
+                                <div class="mx-card-body">
+                                    <div class="mx-kv"><span>Chapters saved</span><span x-text="$store.memexDashboard.chapters?.total ?? 0"></span></div>
+                                    <div class="mx-kv"><span>Tokens preserved</span><span x-text="$store.memexDashboard.formatTokens($store.memexDashboard.chapters?.total_tokens_preserved ?? 0)"></span></div>
+                                    <div class="mx-kv"><span>Last snapshot</span><span x-text="$store.memexDashboard.formatDate($store.memexDashboard.chapters?.last_compressed)"></span></div>
+                                </div>
+                            </div>
+
+                            <!-- Portrait -->
+                            <div class="mx-card">
+                                <div class="mx-card-head">
+                                    <span class="material-symbols-outlined mx-card-icon">person</span>
+                                    <span class="mx-card-title">User Portrait</span>
+                                    <span class="mx-badge" :class="($store.memexDashboard.portrait?.traits ?? 0) > 0 ? 'mx-badge-active' : 'mx-badge-idle'">
+                                        <span x-text="($store.memexDashboard.portrait?.traits ?? 0) > 0 ? 'ACTIVE' : 'IDLE'"></span>
+                                    </span>
+                                </div>
+                                <div class="mx-card-body">
+                                    <div class="mx-kv"><span>Total traits</span><span x-text="$store.memexDashboard.portrait?.traits ?? 0"></span></div>
+                                    <div class="mx-kv"><span>Established (&ge;0.6)</span><span x-text="$store.memexDashboard.portrait?.established ?? 0"></span></div>
+                                    <div class="mx-kv"><span>Last updated</span><span x-text="$store.memexDashboard.formatDate($store.memexDashboard.portrait?.last_updated)"></span></div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </template>
+
+            </div>
+        </template>
+    </div>
+
+    <style>
+        /* === Layout === */
+        .mx-dash {
+            padding: var(--spacing-md);
+        }
+
+        /* === Header === */
+        .mx-header {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: var(--spacing-xs);
+            margin-bottom: var(--spacing-md);
+        }
+
+        /* === Buttons === */
+        .mx-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            background: none;
+            cursor: pointer;
+            padding: 6px;
+            border-radius: var(--border-radius-sm);
+            transition: background var(--transition-speed);
+        }
+        .mx-btn-ghost {
+            color: var(--color-text-muted);
+        }
+        .mx-btn-ghost:hover {
+            background: var(--color-background-hover);
+            color: var(--color-text);
+        }
+        .mx-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* === Error === */
+        .mx-alert {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--border-radius-sm);
+            margin-bottom: var(--spacing-md);
+            font-size: var(--font-size-small);
+            background: rgba(231, 35, 35, 0.1);
+            border: 1px solid var(--color-error-text);
+            color: var(--color-error-text);
+        }
+        .mx-alert .material-symbols-outlined {
+            font-size: 18px;
+        }
+
+        /* === Loading === */
+        .mx-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-lg);
+            color: var(--color-text-muted);
+            font-size: var(--font-size-small);
+        }
+
+        /* === Statistics row === */
+        .mx-stats-row {
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+            padding: var(--spacing-md) 0;
+            margin-bottom: var(--spacing-md);
+            border-radius: var(--border-radius-sm);
+            background: var(--color-panel);
+            border: 1px solid var(--color-border);
+        }
+        .mx-stat-big {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+        }
+        .mx-stat-number {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--color-text);
+            font-variant-numeric: tabular-nums;
+        }
+        .mx-stat-name {
+            font-size: var(--font-size-xs);
+            color: var(--color-text-muted);
+            letter-spacing: 0.08em;
+            font-weight: 600;
+        }
+
+        /* === Subsystem Overview === */
+        .mx-overview-section {
+            background: var(--color-panel);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius-sm);
+            padding: var(--spacing-sm) var(--spacing-md);
+            margin-bottom: var(--spacing-md);
+        }
+        .mx-overview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-sm);
+        }
+        .mx-overview-title {
+            font-size: var(--font-size-xs);
+            font-weight: 600;
+            color: var(--color-text-muted);
+            letter-spacing: 0.08em;
+        }
+        .mx-overview-filters {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+        .mx-filter-btn {
+            font-size: var(--font-size-xs);
+            padding: 2px 10px;
+            border-radius: 999px;
+            border: 1px solid var(--color-border);
+            background: transparent;
+            color: var(--color-text-muted);
+            cursor: pointer;
+            transition: all var(--transition-speed);
+        }
+        .mx-filter-btn:hover {
+            border-color: var(--color-text-muted);
+            color: var(--color-text);
+        }
+        .mx-filter-active {
+            background: var(--color-text-muted);
+            color: var(--color-background) !important;
+            border-color: var(--color-text-muted) !important;
+        }
+        .mx-overview-bar {
+            display: flex;
+            height: 28px;
+            border-radius: 6px;
+            overflow: hidden;
+            gap: 2px;
+        }
+        .mx-bar-segment {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: var(--font-size-small);
+            font-weight: 700;
+            color: #fff;
+            min-width: 24px;
+            transition: flex 0.35s ease;
+        }
+        .mx-bar-decay    { background: #e74c3c; }
+        .mx-bar-session  { background: #3b82f6; }
+        .mx-bar-nudge    { background: #10b981; }
+        .mx-bar-portrait  { background: #f59e0b; }
+        .mx-bar-skills    { background: #8b5cf6; }
+        .mx-bar-chapters  { background: #06b6d4; }
+        .mx-bar-empty    { background: var(--color-border); color: var(--color-text-muted); }
+        .mx-overview-legend {
+            display: flex;
+            justify-content: center;
+            gap: var(--spacing-md);
+            margin-top: var(--spacing-sm);
+            font-size: var(--font-size-small);
+            color: var(--color-text-muted);
+        }
+        .mx-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .mx-legend-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .mx-dot-decay    { background: #e74c3c; }
+        .mx-dot-session  { background: #3b82f6; }
+        .mx-dot-nudge    { background: #10b981; }
+        .mx-dot-portrait  { background: #f59e0b; }
+        .mx-dot-skills    { background: #8b5cf6; }
+        .mx-dot-chapters  { background: #06b6d4; }
+        .mx-global-tag {
+            font-size: 0.6rem;
+            color: var(--color-text-muted);
+            opacity: 0.7;
+            margin-left: 2px;
+        }
+
+        /* === Cards grid === */
+        .mx-cards {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--spacing-sm);
+        }
+        @media (max-width: 560px) {
+            .mx-cards {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* === Card === */
+        .mx-card {
+            background: var(--color-panel);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius-sm);
+            padding: var(--spacing-md);
+            transition: border-color var(--transition-speed);
+        }
+        .mx-card:hover {
+            border-color: var(--color-highlight);
+        }
+        .mx-card-head {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            margin-bottom: var(--spacing-sm);
+        }
+        .mx-card-icon {
+            font-size: 20px;
+        }
+        .mx-card-title {
+            font-weight: 600;
+            font-size: var(--font-size-smaller);
+            color: var(--color-text);
+            flex: 1;
+        }
+
+        /* === Badge === */
+        .mx-badge {
+            font-size: 0.6rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            padding: 2px 8px;
+            border-radius: 999px;
+        }
+        .mx-badge-active {
+            background: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+        }
+        .mx-badge-idle {
+            background: rgba(115, 122, 129, 0.15);
+            color: var(--color-primary);
+        }
+
+        /* === Key-value rows === */
+        .mx-kv {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 3px 0;
+            font-size: var(--font-size-small);
+        }
+        .mx-kv > span:last-child {
+            font-weight: 600;
+            color: var(--color-text);
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* === Spin animation === */
+        .mx-spin {
+            animation: mx-spin 1s linear infinite;
+        }
+        @keyframes mx-spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</body>
+</html>
